@@ -20,9 +20,11 @@
 
     <style>
         body { background-color: #f8fafc; }
-        /* Animações simples */
         .fade-in { animation: fadeIn 0.5s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .modal-enter { animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes modalPop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -31,13 +33,11 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
 
-        // Componente para Ícones Lucide
-        const Icon = ({ name, size = 24, className }) => {
+        const Icon = ({ name, size = 24, className, onClick }) => {
             useEffect(() => {
-                lucide.createIcons();
+                if (window.lucide) window.lucide.createIcons();
             }, [name]);
-
-            return <i data-lucide={name} width={size} height={size} className={className}></i>;
+            return <i data-lucide={name} width={size} height={size} className={className} onClick={onClick}></i>;
         };
 
         const App = () => {
@@ -65,6 +65,7 @@
             const VALE_ALIMENTACAO = 1833.54;
 
             // --- ESTADO ---
+            const [regime, setRegime] = useState('RPC'); // 'RPC' ou 'ANTIGO'
             const [padraoInicial, setPadraoInicial] = useState(36);
             const [gdaePerc, setGdaePerc] = useState(40);
             const [vpi, setVpi] = useState(84.08);
@@ -77,9 +78,59 @@
             const [aeqPerc, setAeqPerc] = useState(15);
             const [comProgressao, setComProgressao] = useState(false);
             const [expandCareer, setExpandCareer] = useState(false);
+            const [modalYear, setModalYear] = useState(null);
 
             // --- LÓGICA DE CÁLCULO ---
             const formatBRL = (val) => val.toLocaleString('pt-br', { style: 'currency', currency: 'BRL' });
+
+            const calculatePSS = (base, tipoRegime) => {
+                // Se for RPC, a base é limitada ao teto
+                let baseCalc = base;
+                if (tipoRegime === 'RPC') {
+                    baseCalc = Math.min(base, TETO_INSS_2026);
+                }
+
+                // Tabela Progressiva Estimada 2025/2026
+                // Faixas (valores aproximados com base na portaria anual)
+                const f1 = 1518.00;
+                const f2 = 2793.88;
+                const f3 = 4190.83;
+                const f4 = TETO_INSS_2026; // ~8157 a 8475
+                const f5 = 13969.48;
+                const f6 = 27938.95;
+                const f7 = 54480.97;
+
+                let pss = 0;
+                
+                // Faixa 1: 7.5%
+                if (baseCalc > 0) pss += Math.min(baseCalc, f1) * 0.075;
+                
+                // Faixa 2: 9%
+                if (baseCalc > f1) pss += (Math.min(baseCalc, f2) - f1) * 0.09;
+                
+                // Faixa 3: 12%
+                if (baseCalc > f2) pss += (Math.min(baseCalc, f3) - f2) * 0.12;
+                
+                // Faixa 4: 14%
+                if (baseCalc > f3) pss += (Math.min(baseCalc, f4) - f3) * 0.14;
+
+                // Se for regime antigo, continua calculando sobre o excedente
+                if (tipoRegime === 'ANTIGO') {
+                    // Faixa 5: 14.5%
+                    if (baseCalc > f4) pss += (Math.min(baseCalc, f5) - f4) * 0.145;
+                    
+                    // Faixa 6: 16.5%
+                    if (baseCalc > f5) pss += (Math.min(baseCalc, f6) - f5) * 0.165;
+                    
+                    // Faixa 7: 19%
+                    if (baseCalc > f6) pss += (Math.min(baseCalc, f7) - f6) * 0.19;
+                    
+                    // Faixa 8: 22%
+                    if (baseCalc > f7) pss += (baseCalc - f7) * 0.22;
+                }
+
+                return pss;
+            };
 
             const calculateYear = (yearStr, currentPadrao) => {
                 const yearKey = parseInt(yearStr) > 2029 ? "2029" : yearStr;
@@ -91,7 +142,6 @@
                 const gdae = base * (gdaePerc / 100);
                 const valAeq = temAeq ? (base * (aeqPerc / 100)) : 0;
                 const valVpi = vpi || 0;
-                
                 const valCreche = temCreche ? (numFilhos * 1288.42) : 0;
                 const valAlimentacao = VALE_ALIMENTACAO;
 
@@ -103,14 +153,11 @@
                 }
 
                 const remunEfetiva = totalRemuneratorio - abateTeto;
-                const baseCalculoPSS = Math.min(remunEfetiva, TETO_INSS_2026);
                 
-                let pss = 0;
-                if (baseCalculoPSS <= 1518.00) pss = baseCalculoPSS * 0.075;
-                else if (baseCalculoPSS <= 2793.88) pss = (1518 * 0.075) + (baseCalculoPSS - 1518) * 0.09;
-                else if (baseCalculoPSS <= 4190.83) pss = (1518 * 0.075) + (1275.88 * 0.09) + (baseCalculoPSS - 2793.88) * 0.12;
-                else pss = (1518 * 0.075) + (1275.88 * 0.09) + (1396.95 * 0.12) + (baseCalculoPSS - 4190.83) * 0.14;
+                // CÁLCULO PSS (REGIME)
+                const pss = calculatePSS(remunEfetiva, regime);
 
+                // CÁLCULO FUNPRESP
                 let valFunpresp = 0;
                 if (usaFunpresp && remunEfetiva > TETO_INSS_2026) {
                     valFunpresp = (remunEfetiva - TETO_INSS_2026) * (funprespPerc / 100);
@@ -153,10 +200,21 @@
                     const currentPadrao = comProgressao ? Math.min(padraoInicial + idx, 45) : padraoInicial;
                     return { year: y, ...calculateYear(y, currentPadrao) };
                 });
-            }, [padraoInicial, gdaePerc, vpi, numFilhos, temCreche, dependentesIR, usaFunpresp, funprespPerc, temAeq, aeqPerc, comProgressao, expandCareer]);
+            }, [padraoInicial, gdaePerc, vpi, numFilhos, temCreche, dependentesIR, usaFunpresp, funprespPerc, temAeq, aeqPerc, comProgressao, expandCareer, regime]);
+
+            // Atualiza comportamento ao trocar de regime
+            const toggleRegime = (newRegime) => {
+                setRegime(newRegime);
+                // Se mudar para Antigo, geralmente desativa Funpresp (pode reativar se quiser)
+                if (newRegime === 'ANTIGO') {
+                    setUsaFunpresp(false);
+                } else {
+                    setUsaFunpresp(true); // Sugere Funpresp para novo regime
+                }
+            };
 
             return (
-                <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4 md:p-8 fade-in">
+                <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4 md:p-8 fade-in relative">
                     <div className="max-w-7xl mx-auto">
                         
                         {/* HEADER */}
@@ -165,7 +223,7 @@
                                 <h1 className="text-3xl font-black text-slate-800 flex items-center gap-2">
                                     <Icon name="trending-up" className="text-blue-600" /> Simulador Analista Legislativo
                                 </h1>
-                                <p className="text-slate-500 font-medium">Senado Federal • Novo Regime Previdenciário (RPC)</p>
+                                <p className="text-slate-500 font-medium">Senado Federal • PL 2025</p>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 <div className="bg-white px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 text-[10px] font-black text-slate-600 flex items-center gap-2 uppercase tracking-wider">
@@ -183,10 +241,27 @@
                             <aside className="lg:col-span-1 space-y-4">
                                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                                     <h2 className="text-lg font-bold mb-6 flex items-center gap-2 text-blue-700">
-                                        <Icon name="calculator" size={20} /> Perfil Funcional
+                                        <Icon name="calculator" size={20} /> Configuração
                                     </h2>
 
+                                    {/* SELETOR DE REGIME */}
+                                    <div className="bg-slate-100 p-1 rounded-xl flex mb-6">
+                                        <button 
+                                            onClick={() => toggleRegime('RPC')}
+                                            className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${regime === 'RPC' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                        >
+                                            Novo (RPC)
+                                        </button>
+                                        <button 
+                                            onClick={() => toggleRegime('ANTIGO')}
+                                            className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${regime === 'ANTIGO' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                        >
+                                            Antigo
+                                        </button>
+                                    </div>
+
                                     <div className="space-y-6">
+                                        {/* Padrão */}
                                         <div>
                                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Padrão Inicial</label>
                                             <select 
@@ -200,6 +275,7 @@
                                             </select>
                                         </div>
 
+                                        {/* Progressão */}
                                         <div 
                                             onClick={() => {
                                                 const newState = !comProgressao;
@@ -281,6 +357,7 @@
                                             </div>
                                         </div>
 
+                                        {/* Dependentes */}
                                         <div className="space-y-4">
                                             <div className="flex flex-col gap-4">
                                                 <div className="flex-1">
@@ -316,6 +393,7 @@
                                                 </div>
                                             )}
                                         </div>
+
                                     </div>
                                 </div>
                             </aside>
@@ -327,8 +405,18 @@
                                     {yearsData.map((data, idx) => (
                                         <div key={data.year} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 relative group transition-all hover:shadow-md">
                                             
+                                            {/* Botão de Informação da Tabela */}
+                                            <button 
+                                                onClick={() => setModalYear(data.year)}
+                                                className="absolute top-4 right-4 text-slate-300 hover:text-blue-500 transition-colors p-1"
+                                                title="Ver Tabela Completa do Ano"
+                                            >
+                                                <Icon name="list" size={20} />
+                                            </button>
+
+                                            {/* Badge Teto Aplicado */}
                                             {data.abateTeto > 0 && (
-                                                <div className="absolute top-4 right-4 text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-full flex items-center gap-1 border border-red-100">
+                                                <div className="absolute top-4 right-12 text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-full flex items-center gap-1 border border-red-100">
                                                     <Icon name="scissors" size={10} /> Teto Aplicado
                                                 </div>
                                             )}
@@ -341,7 +429,7 @@
                                                     </div>
                                                     <h3 className="text-3xl font-black text-slate-800">{data.year}</h3>
                                                 </div>
-                                                <div className="text-right mt-6">
+                                                <div className="text-right mt-8">
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-tighter">Líquido Estimado</p>
                                                     <p className="text-2xl font-black text-blue-700">{formatBRL(data.liquido)}</p>
                                                 </div>
@@ -367,7 +455,7 @@
                                                 <div className="pt-4">
                                                     <details className="group/details">
                                                         <summary className="list-none flex items-center justify-center gap-2 text-xs font-bold text-slate-400 cursor-pointer hover:text-blue-500 transition-colors uppercase tracking-widest">
-                                                            Ver Extrato RPC <Icon name="chevron-right" size={14} className="group-open/details:rotate-90 transition-transform" />
+                                                            Ver Extrato {regime} <Icon name="chevron-right" size={14} className="group-open/details:rotate-90 transition-transform" />
                                                         </summary>
                                                         <div className="mt-4 space-y-2 text-[11px] bg-slate-50 p-4 rounded-2xl border border-slate-100 font-medium text-slate-600">
                                                             <div className="flex justify-between"><span>Vencimento Básico:</span><span className="font-mono text-slate-900">{formatBRL(data.base)}</span></div>
@@ -390,7 +478,13 @@
                                                             {data.valCreche > 0 && <div className="flex justify-between text-blue-600 font-bold"><span>Aux. Creche:</span><span className="font-mono">{formatBRL(data.valCreche)}</span></div>}
                                                             
                                                             <div className="h-px bg-slate-200 my-1" />
-                                                            <div className="flex justify-between text-red-500 font-bold"><span>Previdência (PSS):</span><span className="font-mono">-{formatBRL(data.pss)}</span></div>
+                                                            <div className="flex justify-between text-red-500 font-bold">
+                                                                <span>Previdência (PSS):</span>
+                                                                <span className="font-mono">-{formatBRL(data.pss)}</span>
+                                                            </div>
+                                                            {regime === 'RPC' && <div className="text-[9px] text-slate-400 italic text-right mb-1">Limitado ao Teto INSS</div>}
+                                                            {regime === 'ANTIGO' && <div className="text-[9px] text-slate-400 italic text-right mb-1">Incidência Total (Progressiva)</div>}
+                                                            
                                                             {data.valFunpresp > 0 && <div className="flex justify-between text-emerald-600 font-bold"><span>Funpresp ({funprespPerc}%):</span><span className="font-mono">-{formatBRL(data.valFunpresp)}</span></div>}
                                                             <div className="flex justify-between text-red-500 font-bold"><span>Imposto de Renda:</span><span className="font-mono">-{formatBRL(data.irpf)}</span></div>
                                                         </div>
@@ -424,12 +518,18 @@
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-3">
                                             <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
-                                            <h4 className="text-sm font-black uppercase tracking-widest text-slate-400">Novo Regime (RPC)</h4>
+                                            <h4 className="text-sm font-black uppercase tracking-widest text-slate-400">
+                                                {regime === 'RPC' ? 'Novo Regime (RPC)' : 'Antigo Regime (Sem Limite)'}
+                                            </h4>
                                         </div>
                                         <p className="text-slate-300 text-sm leading-relaxed max-w-lg">
-                                            Neste cenário, sua contribuição previdenciária obrigatória (PSS) está limitada ao teto de <span className="text-white font-bold">{formatBRL(calculateYear("2026", 36).pss)}</span>. 
+                                            {regime === 'RPC' ? (
+                                                <>Neste cenário, sua contribuição previdenciária obrigatória (PSS) está limitada ao teto de <span className="text-white font-bold">{formatBRL(calculateYear("2026", 36).pss)}</span>.</>
+                                            ) : (
+                                                <>Neste cenário, o PSS incide sobre a <strong>remuneração total</strong> (respeitado o abate-teto), utilizando alíquotas progressivas que podem chegar a 22% nas faixas superiores.</>
+                                            )}
                                             <br/><br/>
-                                            <span className="text-amber-300 text-xs font-bold uppercase">Nota:</span> Ao atingir o final da carreira, é comum que a remuneração bruta ultrapasse o Teto Constitucional. Nesse caso, o valor líquido tende a estagnar, pois qualquer aumento bruto é deduzido integralmente pelo Abate-Teto.
+                                            <span className="text-amber-300 text-xs font-bold uppercase">Nota:</span> Ao atingir o final da carreira, é comum que a remuneração bruta ultrapasse o Teto Constitucional.
                                         </p>
                                     </div>
                                     <div className="bg-white/5 backdrop-blur-sm p-6 rounded-3xl border border-white/10 text-center min-w-[200px]">
@@ -442,9 +542,74 @@
                         </div>
 
                         <footer className="mt-12 pt-8 border-t border-slate-200 text-center">
-                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Dashboard Analista Legislativo • v3.6 • Final</p>
+                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Dashboard Analista Legislativo • v4.0 • Multi-Regime</p>
                         </footer>
                     </div>
+
+                    {/* MODAL DE TABELA */}
+                    {modalYear && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm fade-in" onClick={() => setModalYear(null)}>
+                            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto p-8 relative modal-enter" onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setModalYear(null)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-600 transition-colors">
+                                    <Icon name="x" size={24} />
+                                </button>
+                                
+                                <div className="mb-6">
+                                    <h3 className="text-2xl font-black text-slate-800 flex items-center gap-2">
+                                        <Icon name="table-2" className="text-blue-600" /> Tabela Salarial {modalYear}
+                                    </h3>
+                                    <p className="text-sm text-slate-500 mt-2">
+                                        Detalhamento dos valores <strong>brutos estimados</strong> para todos os padrões neste ano de referência:
+                                    </p>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded">GDAE: {gdaePerc}%</span>
+                                        <span className="text-[10px] font-bold bg-amber-50 text-amber-600 px-2 py-1 rounded">AEQ: {temAeq ? `${aeqPerc}%` : 'Não'}</span>
+                                        <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">VPI: {formatBRL(vpi)}</span>
+                                        <span className="text-[10px] font-bold bg-orange-50 text-orange-600 px-2 py-1 rounded">Alimentação: {formatBRL(VALE_ALIMENTACAO)}</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="overflow-x-auto rounded-xl border border-slate-100">
+                                    <table className="w-full text-xs md:text-sm text-left whitespace-nowrap">
+                                        <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
+                                            <tr>
+                                                <th className="p-3">Padrão</th>
+                                                <th className="p-3 text-right">Vencimento</th>
+                                                <th className="p-3 text-right">GAL</th>
+                                                {modalYear === "2026" && <th className="p-3 text-right">GR</th>}
+                                                <th className="p-3 text-right">GDAE</th>
+                                                {temAeq && <th className="p-3 text-right">AEQ</th>}
+                                                <th className="p-3 text-right">VPI</th>
+                                                <th className="p-3 text-right">Alim.</th>
+                                                <th className="p-3 text-right bg-blue-50 text-blue-700">Bruto Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {[45, 44, 43, 42, 41, 40, 39, 38, 37, 36].map(padrao => {
+                                                const dados = calculateYear(modalYear, padrao);
+                                                return (
+                                                    <tr key={padrao} className="hover:bg-blue-50/30 transition-colors">
+                                                        <td className="p-3 font-bold text-slate-700">Padrão {padrao}</td>
+                                                        <td className="p-3 text-right font-mono text-slate-500">{formatBRL(dados.base)}</td>
+                                                        <td className="p-3 text-right font-mono text-slate-500">{formatBRL(dados.gal)}</td>
+                                                        {modalYear === "2026" && <td className="p-3 text-right font-mono text-slate-500">{formatBRL(dados.gr)}</td>}
+                                                        <td className="p-3 text-right font-mono text-slate-500">{formatBRL(dados.gdae)}</td>
+                                                        {temAeq && <td className="p-3 text-right font-mono text-slate-500 text-amber-600">{formatBRL(dados.valAeq)}</td>}
+                                                        <td className="p-3 text-right font-mono text-slate-500">{formatBRL(dados.valVpi)}</td>
+                                                        <td className="p-3 text-right font-mono text-slate-500 text-orange-600">{formatBRL(dados.valAlimentacao)}</td>
+                                                        <td className="p-3 text-right font-mono font-bold text-blue-700 bg-blue-50/50">{formatBRL(dados.brutoTotalDisplay)}</td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p className="text-[10px] text-slate-400 mt-4 italic text-center">
+                                    * O "Bruto Total" considera Vencimento + Gratificações + Adicionais (AEQ/VPI) + Auxílio Alimentação. (Auxílio Creche não incluído nesta tabela geral).
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
