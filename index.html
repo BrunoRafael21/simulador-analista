@@ -56,6 +56,15 @@
             };
 
             const GAL_FACTORS = { "2026": 1.20, "2027": 1.13, "2028": 0.74, "2029": 0.74 };
+            
+            // Fatores FC (Sobre Padrão 45)
+            const FC_FACTORS = {
+                "FC-1": { "2026": 0.23, "2027": 0.20, "2028": 0.16, "2029": 0.16 },
+                "FC-2": { "2026": 0.37, "2027": 0.31, "2028": 0.27, "2029": 0.27 },
+                "FC-3": { "2026": 0.44, "2027": 0.52, "2028": 0.37, "2029": 0.37 },
+                "FC-4": { "2026": 0.66, "2027": 0.56, "2028": 0.47, "2029": 0.47 }
+            };
+
             const VAL_PADRAO_45_2026 = 13753.64;
             const GR_FACTOR_2026 = 1.10;
             const FC2_2026_FACTOR = 0.37;
@@ -65,7 +74,7 @@
             const VALE_ALIMENTACAO = 1833.54;
 
             // --- ESTADO ---
-            const [regime, setRegime] = useState('RPC'); // 'RPC' ou 'ANTIGO'
+            const [regime, setRegime] = useState('RPC'); 
             const [padraoInicial, setPadraoInicial] = useState(36);
             const [gdaePerc, setGdaePerc] = useState(40);
             const [vpi, setVpi] = useState(84.08);
@@ -79,56 +88,37 @@
             const [comProgressao, setComProgressao] = useState(false);
             const [expandCareer, setExpandCareer] = useState(false);
             const [modalYear, setModalYear] = useState(null);
+            const [selectedFC, setSelectedFC] = useState(""); // Nova FC
 
             // --- LÓGICA DE CÁLCULO ---
             const formatBRL = (val) => val.toLocaleString('pt-br', { style: 'currency', currency: 'BRL' });
 
             const calculatePSS = (base, tipoRegime) => {
-                // Se for RPC, a base é limitada ao teto
                 let baseCalc = base;
                 if (tipoRegime === 'RPC') {
                     baseCalc = Math.min(base, TETO_INSS_2026);
                 }
 
-                // Tabela Progressiva Estimada 2025/2026
-                // Faixas (valores aproximados com base na portaria anual)
                 const f1 = 1518.00;
                 const f2 = 2793.88;
                 const f3 = 4190.83;
-                const f4 = TETO_INSS_2026; // ~8157 a 8475
+                const f4 = TETO_INSS_2026; 
                 const f5 = 13969.48;
                 const f6 = 27938.95;
                 const f7 = 54480.97;
 
                 let pss = 0;
-                
-                // Faixa 1: 7.5%
                 if (baseCalc > 0) pss += Math.min(baseCalc, f1) * 0.075;
-                
-                // Faixa 2: 9%
                 if (baseCalc > f1) pss += (Math.min(baseCalc, f2) - f1) * 0.09;
-                
-                // Faixa 3: 12%
                 if (baseCalc > f2) pss += (Math.min(baseCalc, f3) - f2) * 0.12;
-                
-                // Faixa 4: 14%
                 if (baseCalc > f3) pss += (Math.min(baseCalc, f4) - f3) * 0.14;
 
-                // Se for regime antigo, continua calculando sobre o excedente
                 if (tipoRegime === 'ANTIGO') {
-                    // Faixa 5: 14.5%
                     if (baseCalc > f4) pss += (Math.min(baseCalc, f5) - f4) * 0.145;
-                    
-                    // Faixa 6: 16.5%
                     if (baseCalc > f5) pss += (Math.min(baseCalc, f6) - f5) * 0.165;
-                    
-                    // Faixa 7: 19%
                     if (baseCalc > f6) pss += (Math.min(baseCalc, f7) - f6) * 0.19;
-                    
-                    // Faixa 8: 22%
                     if (baseCalc > f7) pss += (baseCalc - f7) * 0.22;
                 }
-
                 return pss;
             };
 
@@ -145,7 +135,15 @@
                 const valCreche = temCreche ? (numFilhos * 1288.42) : 0;
                 const valAlimentacao = VALE_ALIMENTACAO;
 
-                const totalRemuneratorio = base + gal + gr + gdae + valAeq + valVpi;
+                // Cálculo FC
+                let valFC = 0;
+                if (selectedFC && FC_FACTORS[selectedFC]) {
+                    // FC é calculada sobre o Padrão 45 do ano corrente
+                    valFC = baseTop * FC_FACTORS[selectedFC][yearKey];
+                }
+
+                // Total Remuneratório (Base para Teto e Impostos)
+                const totalRemuneratorio = base + gal + gr + gdae + valAeq + valVpi + valFC;
 
                 let abateTeto = 0;
                 if (totalRemuneratorio > TETO_CONSTITUCIONAL) {
@@ -153,11 +151,8 @@
                 }
 
                 const remunEfetiva = totalRemuneratorio - abateTeto;
-                
-                // CÁLCULO PSS (REGIME)
                 const pss = calculatePSS(remunEfetiva, regime);
 
-                // CÁLCULO FUNPRESP
                 let valFunpresp = 0;
                 if (usaFunpresp && remunEfetiva > TETO_INSS_2026) {
                     valFunpresp = (remunEfetiva - TETO_INSS_2026) * (funprespPerc / 100);
@@ -175,7 +170,7 @@
 
                 return { 
                     brutoTotalDisplay, 
-                    base, gal, gr, gdae, valAeq, valVpi, 
+                    base, gal, gr, gdae, valAeq, valVpi, valFC,
                     valCreche, valAlimentacao, 
                     abateTeto, pss, valFunpresp, irpf, liquido, currentPadrao 
                 };
@@ -187,7 +182,6 @@
                 if (expandCareer && comProgressao) {
                     let currentYearInt = 2030;
                     let lastPadrao = Math.min(padraoInicial + 3, 45); 
-                    
                     while (lastPadrao < 45 && currentYearInt < 2045) {
                         years.push(currentYearInt.toString());
                         currentYearInt++;
@@ -200,16 +194,14 @@
                     const currentPadrao = comProgressao ? Math.min(padraoInicial + idx, 45) : padraoInicial;
                     return { year: y, ...calculateYear(y, currentPadrao) };
                 });
-            }, [padraoInicial, gdaePerc, vpi, numFilhos, temCreche, dependentesIR, usaFunpresp, funprespPerc, temAeq, aeqPerc, comProgressao, expandCareer, regime]);
+            }, [padraoInicial, gdaePerc, vpi, numFilhos, temCreche, dependentesIR, usaFunpresp, funprespPerc, temAeq, aeqPerc, comProgressao, expandCareer, regime, selectedFC]);
 
-            // Atualiza comportamento ao trocar de regime
             const toggleRegime = (newRegime) => {
                 setRegime(newRegime);
-                // Se mudar para Antigo, geralmente desativa Funpresp (pode reativar se quiser)
                 if (newRegime === 'ANTIGO') {
                     setUsaFunpresp(false);
                 } else {
-                    setUsaFunpresp(true); // Sugere Funpresp para novo regime
+                    setUsaFunpresp(true);
                 }
             };
 
@@ -294,6 +286,22 @@
                                             <div className={`w-10 h-5 rounded-full relative transition-colors ${comProgressao ? 'bg-indigo-600' : 'bg-slate-300'}`}>
                                                 <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${comProgressao ? 'left-6' : 'left-1'}`} />
                                             </div>
+                                        </div>
+
+                                        {/* FC Selector */}
+                                        <div>
+                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Função Comissionada</label>
+                                            <select 
+                                                value={selectedFC} 
+                                                onChange={(e) => setSelectedFC(e.target.value)}
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 font-bold text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                            >
+                                                <option value="">Nenhuma</option>
+                                                <option value="FC-1">FC-1</option>
+                                                <option value="FC-2">FC-2</option>
+                                                <option value="FC-3">FC-3</option>
+                                                <option value="FC-4">FC-4</option>
+                                            </select>
                                         </div>
 
                                         {/* AEQ */}
@@ -405,7 +413,6 @@
                                     {yearsData.map((data, idx) => (
                                         <div key={data.year} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 relative group transition-all hover:shadow-md">
                                             
-                                            {/* Botão de Informação da Tabela */}
                                             <button 
                                                 onClick={() => setModalYear(data.year)}
                                                 className="absolute top-4 right-4 text-slate-300 hover:text-blue-500 transition-colors p-1"
@@ -414,7 +421,6 @@
                                                 <Icon name="list" size={20} />
                                             </button>
 
-                                            {/* Badge Teto Aplicado */}
                                             {data.abateTeto > 0 && (
                                                 <div className="absolute top-4 right-12 text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-full flex items-center gap-1 border border-red-100">
                                                     <Icon name="scissors" size={10} /> Teto Aplicado
@@ -463,6 +469,7 @@
                                                             {data.gr > 0 && <div className="flex justify-between"><span>GR (Parcela 2026):</span><span className="font-mono text-slate-900">{formatBRL(data.gr)}</span></div>}
                                                             <div className="flex justify-between"><span>GDAE ({gdaePerc}%):</span><span className="font-mono text-slate-900">{formatBRL(data.gdae)}</span></div>
                                                             {temAeq && <div className="flex justify-between text-amber-700 font-bold"><span>AEQ ({aeqPerc}%):</span><span className="font-mono">{formatBRL(data.valAeq)}</span></div>}
+                                                            {data.valFC > 0 && <div className="flex justify-between text-indigo-700 font-bold"><span>{selectedFC}:</span><span className="font-mono">{formatBRL(data.valFC)}</span></div>}
                                                             <div className="flex justify-between text-slate-600"><span>VPI (Vantagem Individual):</span><span className="font-mono">{formatBRL(data.valVpi)}</span></div>
                                                             
                                                             <div className="h-px bg-slate-200 my-1" />
@@ -542,7 +549,7 @@
                         </div>
 
                         <footer className="mt-12 pt-8 border-t border-slate-200 text-center">
-                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Dashboard Analista Legislativo • v4.0 • Multi-Regime</p>
+                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Dashboard Analista Legislativo • v4.1 • FC Adicionada</p>
                         </footer>
                     </div>
 
@@ -564,6 +571,7 @@
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded">GDAE: {gdaePerc}%</span>
                                         <span className="text-[10px] font-bold bg-amber-50 text-amber-600 px-2 py-1 rounded">AEQ: {temAeq ? `${aeqPerc}%` : 'Não'}</span>
+                                        <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded">FC: {selectedFC || 'Nenhuma'}</span>
                                         <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">VPI: {formatBRL(vpi)}</span>
                                         <span className="text-[10px] font-bold bg-orange-50 text-orange-600 px-2 py-1 rounded">Alimentação: {formatBRL(VALE_ALIMENTACAO)}</span>
                                     </div>
@@ -579,6 +587,7 @@
                                                 {modalYear === "2026" && <th className="p-3 text-right">GR</th>}
                                                 <th className="p-3 text-right">GDAE</th>
                                                 {temAeq && <th className="p-3 text-right">AEQ</th>}
+                                                {selectedFC && <th className="p-3 text-right">FC</th>}
                                                 <th className="p-3 text-right">VPI</th>
                                                 <th className="p-3 text-right">Alim.</th>
                                                 <th className="p-3 text-right bg-blue-50 text-blue-700">Bruto Total</th>
@@ -595,6 +604,7 @@
                                                         {modalYear === "2026" && <td className="p-3 text-right font-mono text-slate-500">{formatBRL(dados.gr)}</td>}
                                                         <td className="p-3 text-right font-mono text-slate-500">{formatBRL(dados.gdae)}</td>
                                                         {temAeq && <td className="p-3 text-right font-mono text-slate-500 text-amber-600">{formatBRL(dados.valAeq)}</td>}
+                                                        {selectedFC && <td className="p-3 text-right font-mono text-slate-500 text-indigo-600">{formatBRL(dados.valFC)}</td>}
                                                         <td className="p-3 text-right font-mono text-slate-500">{formatBRL(dados.valVpi)}</td>
                                                         <td className="p-3 text-right font-mono text-slate-500 text-orange-600">{formatBRL(dados.valAlimentacao)}</td>
                                                         <td className="p-3 text-right font-mono font-bold text-blue-700 bg-blue-50/50">{formatBRL(dados.brutoTotalDisplay)}</td>
@@ -605,7 +615,7 @@
                                     </table>
                                 </div>
                                 <p className="text-[10px] text-slate-400 mt-4 italic text-center">
-                                    * O "Bruto Total" considera Vencimento + Gratificações + Adicionais (AEQ/VPI) + Auxílio Alimentação. (Auxílio Creche não incluído nesta tabela geral).
+                                    * O "Bruto Total" considera Vencimento + Gratificações + Adicionais (AEQ/VPI) + FC + Auxílio Alimentação. (Auxílio Creche não incluído nesta tabela geral).
                                 </p>
                             </div>
                         </div>
