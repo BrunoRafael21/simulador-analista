@@ -25,6 +25,10 @@
         
         .modal-enter { animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes modalPop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        
+        /* Custom Checkbox Style */
+        .checkbox-wrapper input:checked + div { background-color: #2563eb; border-color: #2563eb; }
+        .checkbox-wrapper input:checked + div svg { display: block; }
     </style>
 </head>
 <body>
@@ -91,10 +95,32 @@
             const [comProgressao, setComProgressao] = useState(false);
             const [expandCareer, setExpandCareer] = useState(false);
             const [modalYear, setModalYear] = useState(null);
-            const [selectedFC, setSelectedFC] = useState(""); // Nova FC
+            const [selectedFC, setSelectedFC] = useState("");
+            
+            // Estado de Aprovação das Tabelas
+            const [approvedYears, setApprovedYears] = useState({
+                "2026": true,
+                "2027": false,
+                "2028": false,
+                "2029": false
+            });
 
             // --- LÓGICA DE CÁLCULO ---
             const formatBRL = (val) => val.toLocaleString('pt-br', { style: 'currency', currency: 'BRL' });
+
+            const getEffectiveYearKey = (targetYear) => {
+                const target = parseInt(targetYear);
+                // Se o ano alvo é futuro (ex: 2030), começa checando de 2029 pra trás
+                let searchStart = target > 2029 ? 2029 : target;
+
+                for (let y = searchStart; y >= 2026; y--) {
+                    const yStr = y.toString();
+                    if (approvedYears[yStr]) {
+                        return yStr;
+                    }
+                }
+                return "2026"; // Fallback seguro
+            };
 
             const calculatePSS = (base, tipoRegime) => {
                 let baseCalc = base;
@@ -126,26 +152,31 @@
             };
 
             const calculateYear = (yearStr, currentPadrao) => {
-                const yearKey = parseInt(yearStr) > 2029 ? "2029" : yearStr;
-                const base = ANALISTA_SALARIES[currentPadrao][yearKey];
-                const baseTop = ANALISTA_SALARIES[45][yearKey];
+                const effectiveYearKey = getEffectiveYearKey(yearStr);
                 
-                const gal = baseTop * GAL_FACTORS[yearKey];
-                const gr = yearStr === "2026" ? (VAL_PADRAO_45_2026 * FC2_2026_FACTOR * GR_FACTOR_2026) : 0;
+                const base = ANALISTA_SALARIES[currentPadrao][effectiveYearKey];
+                const baseTop = ANALISTA_SALARIES[45][effectiveYearKey];
+                
+                const gal = baseTop * GAL_FACTORS[effectiveYearKey];
+                
+                let gr = 0;
+                if (effectiveYearKey === "2026") {
+                    gr = VAL_PADRAO_45_2026 * FC2_2026_FACTOR * GR_FACTOR_2026;
+                } else {
+                    gr = 0; 
+                }
+
                 const gdae = base * (gdaePerc / 100);
                 const valAeq = temAeq ? (base * (aeqPerc / 100)) : 0;
                 const valVpi = vpi || 0;
                 const valCreche = temCreche ? (numFilhos * 1288.42) : 0;
                 const valAlimentacao = VALE_ALIMENTACAO;
 
-                // Cálculo FC
                 let valFC = 0;
                 if (selectedFC && FC_FACTORS[selectedFC]) {
-                    // FC é calculada sobre o Padrão 45 do ano corrente
-                    valFC = baseTop * FC_FACTORS[selectedFC][yearKey];
+                    valFC = baseTop * FC_FACTORS[selectedFC][effectiveYearKey];
                 }
 
-                // Total Remuneratório (Base para Teto e Impostos)
                 const totalRemuneratorio = base + gal + gr + gdae + valAeq + valVpi + valFC;
 
                 let abateTeto = 0;
@@ -175,7 +206,8 @@
                     brutoTotalDisplay, 
                     base, gal, gr, gdae, valAeq, valVpi, valFC,
                     valCreche, valAlimentacao, 
-                    abateTeto, pss, valFunpresp, irpf, liquido, currentPadrao 
+                    abateTeto, pss, valFunpresp, irpf, liquido, currentPadrao,
+                    effectiveYearKey
                 };
             };
 
@@ -197,7 +229,7 @@
                     const currentPadrao = comProgressao ? Math.min(padraoInicial + idx, 45) : padraoInicial;
                     return { year: y, ...calculateYear(y, currentPadrao) };
                 });
-            }, [padraoInicial, gdaePerc, vpi, numFilhos, temCreche, dependentesIR, usaFunpresp, funprespPerc, temAeq, aeqPerc, comProgressao, expandCareer, regime, selectedFC]);
+            }, [padraoInicial, gdaePerc, vpi, numFilhos, temCreche, dependentesIR, usaFunpresp, funprespPerc, temAeq, aeqPerc, comProgressao, expandCareer, regime, selectedFC, approvedYears]);
 
             const toggleRegime = (newRegime) => {
                 setRegime(newRegime);
@@ -208,11 +240,17 @@
                 }
             };
 
+            const toggleApproval = (year) => {
+                setApprovedYears(prev => ({
+                    ...prev,
+                    [year]: !prev[year]
+                }));
+            };
+
             return (
                 <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4 md:p-8 fade-in relative">
                     <div className="max-w-7xl mx-auto">
                         
-                        {/* HEADER */}
                         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                             <div>
                                 <h1 className="text-3xl font-black text-slate-800 flex items-center gap-2">
@@ -232,12 +270,32 @@
 
                         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                             
-                            {/* SIDEBAR */}
                             <aside className="lg:col-span-1 space-y-4">
                                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                                     <h2 className="text-lg font-bold mb-6 flex items-center gap-2 text-blue-700">
                                         <Icon name="calculator" size={20} /> Configuração
                                     </h2>
+
+                                    {/* STATUS APROVAÇÃO */}
+                                    <div className="mb-6 border-b border-slate-100 pb-4">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Status Aprovação (Tabelas)</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {["2026", "2027", "2028", "2029"].map(year => (
+                                                <label key={year} className="checkbox-wrapper flex items-center gap-2 cursor-pointer bg-slate-50 p-2 rounded-lg border border-slate-100 hover:border-blue-200 transition-colors">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={approvedYears[year]} 
+                                                        onChange={() => toggleApproval(year)}
+                                                        className="hidden"
+                                                    />
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${approvedYears[year] ? 'bg-blue-600 border-blue-600' : 'bg-white border-slate-300'}`}>
+                                                        <svg className="w-3 h-3 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                                    </div>
+                                                    <span className={`text-xs font-bold ${approvedYears[year] ? 'text-blue-700' : 'text-slate-400 line-through'}`}>{year}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
 
                                     {/* SELETOR DE REGIME */}
                                     <div className="bg-slate-100 p-1 rounded-xl flex mb-6">
@@ -439,7 +497,12 @@
                                                         <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md uppercase tracking-tighter">Padrão {data.currentPadrao}</span>
                                                         {data.currentPadrao === 45 && <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md uppercase tracking-tighter">Topo</span>}
                                                     </div>
-                                                    <h3 className="text-3xl font-black text-slate-800">{data.year}</h3>
+                                                    <h3 className="text-3xl font-black text-slate-800 flex gap-2 items-end">
+                                                        {data.year}
+                                                        {data.effectiveYearKey !== data.year && (
+                                                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-bold mb-1">Base: {data.effectiveYearKey}</span>
+                                                        )}
+                                                    </h3>
                                                 </div>
                                                 <div className="text-right mt-8">
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase mb-1 tracking-tighter">Líquido Estimado</p>
@@ -472,7 +535,7 @@
                                                         <div className="mt-4 space-y-2 text-[11px] bg-slate-50 p-4 rounded-2xl border border-slate-100 font-medium text-slate-600">
                                                             <div className="flex justify-between"><span>Vencimento Básico:</span><span className="font-mono text-slate-900">{formatBRL(data.base)}</span></div>
                                                             <div className="flex justify-between"><span>GAL (Fator Carreira):</span><span className="font-mono text-slate-900">{formatBRL(data.gal)}</span></div>
-                                                            {data.gr > 0 && <div className="flex justify-between"><span>GR (Parcela 2026):</span><span className="font-mono text-slate-900">{formatBRL(data.gr)}</span></div>}
+                                                            {data.gr > 0 && <div className="flex justify-between"><span>GR ({data.effectiveYearKey === "2026" ? "Ativa" : "Inativa"}):</span><span className="font-mono text-slate-900">{formatBRL(data.gr)}</span></div>}
                                                             <div className="flex justify-between"><span>GDAE ({gdaePerc}%):</span><span className="font-mono text-slate-900">{formatBRL(data.gdae)}</span></div>
                                                             {temAeq && <div className="flex justify-between text-amber-700 font-bold"><span>AEQ ({aeqPerc}%):</span><span className="font-mono">{formatBRL(data.valAeq)}</span></div>}
                                                             {data.valFC > 0 && <div className="flex justify-between text-indigo-700 font-bold"><span>{selectedFC}:</span><span className="font-mono">{formatBRL(data.valFC)}</span></div>}
@@ -555,7 +618,7 @@
                         </div>
 
                         <footer className="mt-12 pt-8 border-t border-slate-200 text-center">
-                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Dashboard Analista Legislativo • v4.1 • FC Adicionada</p>
+                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Dashboard Analista Legislativo • v4.2 • Controle de Aprovação</p>
                         </footer>
                     </div>
 
@@ -590,7 +653,8 @@
                                                 <th className="p-3">Padrão</th>
                                                 <th className="p-3 text-right">Vencimento</th>
                                                 <th className="p-3 text-right">GAL</th>
-                                                {modalYear === "2026" && <th className="p-3 text-right">GR</th>}
+                                                {/* Exibe coluna GR se o ano base for 2026 */}
+                                                {getEffectiveYearKey(modalYear) === "2026" && <th className="p-3 text-right">GR</th>}
                                                 <th className="p-3 text-right">GDAE</th>
                                                 {temAeq && <th className="p-3 text-right">AEQ</th>}
                                                 {selectedFC && <th className="p-3 text-right">FC</th>}
@@ -607,7 +671,7 @@
                                                         <td className="p-3 font-bold text-slate-700">Padrão {padrao}</td>
                                                         <td className="p-3 text-right font-mono text-slate-500">{formatBRL(dados.base)}</td>
                                                         <td className="p-3 text-right font-mono text-slate-500">{formatBRL(dados.gal)}</td>
-                                                        {modalYear === "2026" && <td className="p-3 text-right font-mono text-slate-500">{formatBRL(dados.gr)}</td>}
+                                                        {dados.effectiveYearKey === "2026" && <td className="p-3 text-right font-mono text-slate-500">{formatBRL(dados.gr)}</td>}
                                                         <td className="p-3 text-right font-mono text-slate-500">{formatBRL(dados.gdae)}</td>
                                                         {temAeq && <td className="p-3 text-right font-mono text-slate-500 text-amber-600">{formatBRL(dados.valAeq)}</td>}
                                                         {selectedFC && <td className="p-3 text-right font-mono text-slate-500 text-indigo-600">{formatBRL(dados.valFC)}</td>}
@@ -622,6 +686,14 @@
                                 </div>
                                 <p className="text-[10px] text-slate-400 mt-4 italic text-center">
                                     * O "Bruto Total" considera Vencimento + Gratificações + Adicionais (AEQ/VPI) + FC + Auxílio Alimentação. (Auxílio Creche não incluído nesta tabela geral).
+                                    {getEffectiveYearKey(modalYear) !== modalYear && (
+                                        <>
+                                            <br/> 
+                                            <span className="font-bold text-red-500">
+                                                ** Atenção: Valores baseados na tabela de {getEffectiveYearKey(modalYear)} devido à não aprovação da tabela de {modalYear}. **
+                                            </span>
+                                        </>
+                                    )}
                                 </p>
                             </div>
                         </div>
