@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador Salarial - Analista Senado Federal</title>
+    <title>Simulador Salarial - Senado Federal</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -46,22 +46,50 @@
 
         const App = () => {
             // --- DADOS DO PL E BENEFÍCIOS ---
-            const ANALISTA_SALARIES = {
-                45: { "2026": 13753.64, "2027": 17618.41, "2028": 22569.18, "2029": 24181.07 },
-                44: { "2026": 13341.03, "2027": 17089.85, "2028": 21892.10, "2029": 23455.64 },
-                43: { "2026": 12940.78, "2027": 16577.14, "2028": 21235.31, "2029": 22751.94 },
-                42: { "2026": 12552.57, "2027": 16079.84, "2028": 20598.28, "2029": 22069.41 },
-                41: { "2026": 12175.98, "2027": 15597.43, "2028": 19980.31, "2029": 21407.31 },
-                40: { "2026": 11810.70, "2027": 15129.51, "2028": 19380.91, "2029": 20765.09 },
-                39: { "2026": 11456.37, "2027": 14675.61, "2028": 18799.45, "2029": 20142.11 },
-                38: { "2026": 11112.68, "2027": 14235.34, "2028": 18235.47, "2029": 19537.84 },
-                37: { "2026": 10779.29, "2027": 13808.28, "2028": 17688.40, "2029": 18951.71 },
-                36: { "2026": 10455.93, "2027": 13394.05, "2028": 17157.78, "2029": 18383.18 }
+            const SALARIES = {
+                analista: {
+                    45: { "2026": 13753.64, "2027": 17618.41, "2028": 22569.18, "2029": 24181.07 },
+                    44: { "2026": 13341.03, "2027": 17089.85, "2028": 21892.10, "2029": 23455.64 },
+                    43: { "2026": 12940.78, "2027": 16577.14, "2028": 21235.31, "2029": 22751.94 },
+                    42: { "2026": 12552.57, "2027": 16079.84, "2028": 20598.28, "2029": 22069.41 },
+                    41: { "2026": 12175.98, "2027": 15597.43, "2028": 19980.31, "2029": 21407.31 },
+                    40: { "2026": 11810.70, "2027": 15129.51, "2028": 19380.91, "2029": 20765.09 },
+                    39: { "2026": 11456.37, "2027": 14675.61, "2028": 18799.45, "2029": 20142.11 },
+                    38: { "2026": 11112.68, "2027": 14235.34, "2028": 18235.47, "2029": 19537.84 },
+                    37: { "2026": 10779.29, "2027": 13808.28, "2028": 17688.40, "2029": 18951.71 },
+                    36: { "2026": 10455.93, "2027": 13394.05, "2028": 17157.78, "2029": 18383.18 }
+                },
+                tecnico: {
+                    36: { "2026": 10455.93, "2027": 13394.05, "2028": 17157.78, "2029": 18383.18 },
+                    35: { "2026": 10142.23, "2027": 12992.19, "2028": 16643.00, "2029": 17831.64 },
+                    34: { "2026": 9837.96, "2027": 12602.43, "2028": 16143.72, "2029": 17296.70 },
+                    33: { "2026": 9542.84, "2027": 12224.37, "2028": 15659.42, "2029": 16777.82 },
+                    32: { "2026": 9256.52, "2027": 11857.60, "2028": 15189.59, "2029": 16274.43 },
+                    31: { "2026": 8978.86, "2027": 11501.92, "2028": 14733.96, "2029": 15786.26 },
+                    30: { "2026": 8941.46, "2027": 11454.01, "2028": 14672.58, "2029": 15720.50 },
+                    29: { "2026": 8671.68, "2027": 11108.42, "2028": 14229.89, "2029": 15246.18 },
+                    28: { "2026": 8411.53, "2027": 10775.17, "2028": 13803.00, "2029": 14788.81 },
+                    27: { "2026": 8159.16, "2027": 10451.89, "2028": 13388.87, "2029": 14345.10 },
+                    26: { "2026": 7914.39, "2027": 10138.33, "2028": 12987.20, "2029": 13914.75 },
+                    25: { "2026": 7676.97, "2027": 9834.20, "2028": 12597.61, "2029": 13497.33 },
+                    24: { "2026": 7446.65, "2027": 9539.15, "2028": 12219.65, "2029": 13092.38 },
+                    23: { "2026": 7223.24, "2027": 9252.97, "2028": 11853.05, "2029": 12699.60 },
+                    22: { "2026": 7006.56, "2027": 8975.40, "2028": 11497.49, "2029": 12318.64 },
+                    21: { "2026": 6796.37, "2027": 8706.15, "2028": 11152.58, "2029": 11949.10 }
+                }
             };
 
-            const GAL_FACTORS = { "2026": 1.20, "2027": 1.13, "2028": 0.74, "2029": 0.74 };
+            const GAL_FACTORS = { 
+                analista: { "2026": 1.20, "2027": 1.13, "2028": 0.74, "2029": 0.74 },
+                tecnico: { "2026": 1.43, "2027": 1.25, "2028": 0.87, "2029": 0.87 }
+            };
+
+            const GR_CONFIG = {
+                analista: { factor: 1.10, fcBase: "FC-2" }, 
+                tecnico: { factor: 0.95, fcBase: "FC-1" }   
+            };
             
-            // Fatores FC (Sobre Padrão 45)
+            // Fatores FC (Sempre sobre o Padrão 45 do Analista)
             const FC_FACTORS = {
                 "FC-1": { "2026": 0.23, "2027": 0.20, "2028": 0.16, "2029": 0.16 },
                 "FC-2": { "2026": 0.37, "2027": 0.31, "2028": 0.27, "2029": 0.27 },
@@ -72,17 +100,15 @@
                 "FC-7": { "2026": 0.85, "2027": 1.00, "2028": 0.67, "2029": 0.67 }
             };
 
-            const VAL_PADRAO_45_2026 = 13753.64;
-            const GR_FACTOR_2026 = 1.10;
-            const FC2_2026_FACTOR = 0.37;
             const TETO_INSS_2026 = 8475.55; 
             const TETO_CONSTITUCIONAL = 46366.19;
             const DED_DEPENDENTE_IR = 189.59;
             const VALE_ALIMENTACAO = 1833.54;
 
             // --- ESTADO ---
+            const [cargo, setCargo] = useState('analista'); // 'analista' ou 'tecnico'
             const [regime, setRegime] = useState('RPC'); 
-            const [padraoInicial, setPadraoInicial] = useState(36);
+            const [padraoInicial, setPadraoInicial] = useState(36); // Atualiza com base no cargo
             const [gdaePerc, setGdaePerc] = useState(40);
             const [vpi, setVpi] = useState(84.08);
             const [numFilhos, setNumFilhos] = useState(0);
@@ -97,44 +123,39 @@
             const [modalYear, setModalYear] = useState(null);
             const [selectedFC, setSelectedFC] = useState("");
             
-            // Estado de Aprovação das Tabelas
             const [approvedYears, setApprovedYears] = useState({
-                "2026": true,
-                "2027": false,
-                "2028": false,
-                "2029": false
+                "2026": true, "2027": false, "2028": false, "2029": false
             });
+
+            // Função para trocar de cargo e ajustar o padrão base simultaneamente
+            const handleCargoChange = (newCargo) => {
+                if (newCargo === cargo) return;
+                
+                // O React agrupa (batch) essas atualizações, evitando o erro de renderização
+                setCargo(newCargo);
+                setExpandCareer(false);
+                setPadraoInicial(newCargo === 'analista' ? 36 : 21);
+            };
 
             // --- LÓGICA DE CÁLCULO ---
             const formatBRL = (val) => val.toLocaleString('pt-br', { style: 'currency', currency: 'BRL' });
 
             const getEffectiveYearKey = (targetYear) => {
                 const target = parseInt(targetYear);
-                // Se o ano alvo é futuro (ex: 2030), começa checando de 2029 pra trás
                 let searchStart = target > 2029 ? 2029 : target;
-
                 for (let y = searchStart; y >= 2026; y--) {
                     const yStr = y.toString();
-                    if (approvedYears[yStr]) {
-                        return yStr;
-                    }
+                    if (approvedYears[yStr]) return yStr;
                 }
-                return "2026"; // Fallback seguro
+                return "2026"; 
             };
 
             const calculatePSS = (base, tipoRegime) => {
                 let baseCalc = base;
-                if (tipoRegime === 'RPC') {
-                    baseCalc = Math.min(base, TETO_INSS_2026);
-                }
+                if (tipoRegime === 'RPC') baseCalc = Math.min(base, TETO_INSS_2026);
 
-                const f1 = 1518.00;
-                const f2 = 2793.88;
-                const f3 = 4190.83;
-                const f4 = TETO_INSS_2026; 
-                const f5 = 13969.48;
-                const f6 = 27938.95;
-                const f7 = 54480.97;
+                const f1 = 1518.00, f2 = 2793.88, f3 = 4190.83, f4 = TETO_INSS_2026; 
+                const f5 = 13969.48, f6 = 27938.95, f7 = 54480.97;
 
                 let pss = 0;
                 if (baseCalc > 0) pss += Math.min(baseCalc, f1) * 0.075;
@@ -154,16 +175,30 @@
             const calculateYear = (yearStr, currentPadrao) => {
                 const effectiveYearKey = getEffectiveYearKey(yearStr);
                 
-                const base = ANALISTA_SALARIES[currentPadrao][effectiveYearKey];
-                const baseTop = ANALISTA_SALARIES[45][effectiveYearKey];
+                // TRAVA DE SEGURANÇA: Previne erros caso o padrão ainda esteja sincronizando
+                let safePadrao = currentPadrao;
+                if (!SALARIES[cargo][safePadrao]) {
+                    safePadrao = cargo === 'analista' ? 36 : 21;
+                }
+
+                // Vencimento do padrão atual
+                const base = SALARIES[cargo][safePadrao][effectiveYearKey];
                 
-                const gal = baseTop * GAL_FACTORS[effectiveYearKey];
+                // Base Topo para GAL (Analista=45, Técnico=36)
+                const highestPadrao = cargo === 'analista' ? 45 : 36;
+                const baseTopForGAL = SALARIES[cargo][highestPadrao][effectiveYearKey];
+                const gal = baseTopForGAL * GAL_FACTORS[cargo][effectiveYearKey];
                 
+                // Base Topo Universal (Sempre Padrão 45 para FCs e Base de GR)
+                const baseUniversalTop45 = SALARIES.analista[45][effectiveYearKey];
+                
+                // GR (Apenas 2026)
                 let gr = 0;
                 if (effectiveYearKey === "2026") {
-                    gr = VAL_PADRAO_45_2026 * FC2_2026_FACTOR * GR_FACTOR_2026;
-                } else {
-                    gr = 0; 
+                    const fcBaseLvl = GR_CONFIG[cargo].fcBase;
+                    const fcBaseFactor = FC_FACTORS[fcBaseLvl]["2026"];
+                    const cargoGRFactor = GR_CONFIG[cargo].factor;
+                    gr = baseUniversalTop45 * fcBaseFactor * cargoGRFactor;
                 }
 
                 const gdae = base * (gdaePerc / 100);
@@ -172,9 +207,10 @@
                 const valCreche = temCreche ? (numFilhos * 1288.42) : 0;
                 const valAlimentacao = VALE_ALIMENTACAO;
 
+                // Cálculo FC (Sempre sobre o Padrão 45 de Analista)
                 let valFC = 0;
                 if (selectedFC && FC_FACTORS[selectedFC]) {
-                    valFC = baseTop * FC_FACTORS[selectedFC][effectiveYearKey];
+                    valFC = baseUniversalTop45 * FC_FACTORS[selectedFC][effectiveYearKey];
                 }
 
                 const totalRemuneratorio = base + gal + gr + gdae + valAeq + valVpi + valFC;
@@ -213,11 +249,12 @@
 
             const yearsData = useMemo(() => {
                 let years = ["2026", "2027", "2028", "2029"];
+                const maxPadrao = cargo === 'analista' ? 45 : 36;
 
                 if (expandCareer && comProgressao) {
                     let currentYearInt = 2030;
-                    let lastPadrao = Math.min(padraoInicial + 3, 45); 
-                    while (lastPadrao < 45 && currentYearInt < 2045) {
+                    let lastPadrao = Math.min(padraoInicial + 3, maxPadrao); 
+                    while (lastPadrao < maxPadrao && currentYearInt < 2045) {
                         years.push(currentYearInt.toString());
                         currentYearInt++;
                         lastPadrao++;
@@ -226,26 +263,23 @@
                 }
 
                 return years.map((y, idx) => {
-                    const currentPadrao = comProgressao ? Math.min(padraoInicial + idx, 45) : padraoInicial;
+                    const currentPadrao = comProgressao ? Math.min(padraoInicial + idx, maxPadrao) : padraoInicial;
                     return { year: y, ...calculateYear(y, currentPadrao) };
                 });
-            }, [padraoInicial, gdaePerc, vpi, numFilhos, temCreche, dependentesIR, usaFunpresp, funprespPerc, temAeq, aeqPerc, comProgressao, expandCareer, regime, selectedFC, approvedYears]);
+            }, [cargo, padraoInicial, gdaePerc, vpi, numFilhos, temCreche, dependentesIR, usaFunpresp, funprespPerc, temAeq, aeqPerc, comProgressao, expandCareer, regime, selectedFC, approvedYears]);
 
             const toggleRegime = (newRegime) => {
                 setRegime(newRegime);
-                if (newRegime === 'ANTIGO') {
-                    setUsaFunpresp(false);
-                } else {
-                    setUsaFunpresp(true);
-                }
+                if (newRegime === 'ANTIGO') setUsaFunpresp(false);
+                else setUsaFunpresp(true);
             };
 
             const toggleApproval = (year) => {
-                setApprovedYears(prev => ({
-                    ...prev,
-                    [year]: !prev[year]
-                }));
+                setApprovedYears(prev => ({ ...prev, [year]: !prev[year] }));
             };
+
+            // Padrões disponíveis para o dropdown do Modal
+            const padroesDisponiveis = Object.keys(SALARIES[cargo]).map(Number).sort((a,b) => b-a);
 
             return (
                 <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4 md:p-8 fade-in relative">
@@ -254,7 +288,7 @@
                         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                             <div>
                                 <h1 className="text-3xl font-black text-slate-800 flex items-center gap-2">
-                                    <Icon name="trending-up" className="text-blue-600" /> Simulador Analista Legislativo
+                                    <Icon name="trending-up" className="text-blue-600" /> Simulador {cargo === 'analista' ? 'Analista' : 'Técnico'} Legislativo
                                 </h1>
                                 <p className="text-slate-500 font-medium">Senado Federal • PL 2025</p>
                             </div>
@@ -270,7 +304,25 @@
 
                         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                             
+                            {/* SIDEBAR */}
                             <aside className="lg:col-span-1 space-y-4">
+                                
+                                {/* SELETOR DE CARGO */}
+                                <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 flex gap-2">
+                                    <button 
+                                        onClick={() => handleCargoChange('analista')}
+                                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${cargo === 'analista' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                                    >
+                                        <Icon name="briefcase" size={16} /> Analista
+                                    </button>
+                                    <button 
+                                        onClick={() => handleCargoChange('tecnico')}
+                                        className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${cargo === 'tecnico' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                                    >
+                                        <Icon name="monitor" size={16} /> Técnico
+                                    </button>
+                                </div>
+
                                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                                     <h2 className="text-lg font-bold mb-6 flex items-center gap-2 text-blue-700">
                                         <Icon name="calculator" size={20} /> Configuração
@@ -322,7 +374,7 @@
                                                 onChange={(e) => setPadraoInicial(Number(e.target.value))}
                                                 className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 font-bold focus:ring-2 focus:ring-blue-500 outline-none"
                                             >
-                                                {Object.keys(ANALISTA_SALARIES).reverse().map(p => (
+                                                {padroesDisponiveis.map(p => (
                                                     <option key={p} value={p}>Padrão {p}</option>
                                                 ))}
                                             </select>
@@ -495,7 +547,7 @@
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="text-[10px] font-black bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md uppercase tracking-tighter">Padrão {data.currentPadrao}</span>
-                                                        {data.currentPadrao === 45 && <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md uppercase tracking-tighter">Topo</span>}
+                                                        {data.currentPadrao === (cargo === 'analista' ? 45 : 36) && <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md uppercase tracking-tighter">Topo</span>}
                                                     </div>
                                                     <h3 className="text-3xl font-black text-slate-800 flex gap-2 items-end">
                                                         {data.year}
@@ -583,7 +635,7 @@
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Icon name="arrow-right-circle" size={16} className="text-blue-500" /> Simular Restante da Carreira (Até Padrão 45)
+                                                    <Icon name="arrow-right-circle" size={16} className="text-blue-500" /> Simular Restante da Carreira
                                                 </>
                                             )}
                                         </button>
@@ -600,7 +652,7 @@
                                         </div>
                                         <p className="text-slate-300 text-sm leading-relaxed max-w-lg">
                                             {regime === 'RPC' ? (
-                                                <>Neste cenário, sua contribuição previdenciária obrigatória (PSS) está limitada ao teto de <span className="text-white font-bold">{formatBRL(calculateYear("2026", 36).pss)}</span>.</>
+                                                <>Neste cenário, sua contribuição previdenciária obrigatória (PSS) está limitada ao teto de <span className="text-white font-bold">{formatBRL(calculateYear("2026", padraoInicial).pss)}</span>.</>
                                             ) : (
                                                 <>Neste cenário, o PSS incide sobre a <strong>remuneração total</strong> (respeitado o abate-teto), utilizando alíquotas progressivas que podem chegar a 22% nas faixas superiores.</>
                                             )}
@@ -618,7 +670,7 @@
                         </div>
 
                         <footer className="mt-12 pt-8 border-t border-slate-200 text-center">
-                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Dashboard Analista Legislativo • v4.2 • Controle de Aprovação</p>
+                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Dashboard Senado Federal • v5.0 • Analista e Técnico</p>
                         </footer>
                     </div>
 
@@ -632,7 +684,7 @@
                                 
                                 <div className="mb-6">
                                     <h3 className="text-2xl font-black text-slate-800 flex items-center gap-2">
-                                        <Icon name="table-2" className="text-blue-600" /> Tabela Salarial {modalYear}
+                                        <Icon name="table-2" className="text-blue-600" /> Tabela Salarial {modalYear} ({cargo === 'analista' ? 'Analista' : 'Técnico'})
                                     </h3>
                                     <p className="text-sm text-slate-500 mt-2">
                                         Detalhamento dos valores <strong>brutos estimados</strong> para todos os padrões neste ano de referência:
@@ -653,7 +705,6 @@
                                                 <th className="p-3">Padrão</th>
                                                 <th className="p-3 text-right">Vencimento</th>
                                                 <th className="p-3 text-right">GAL</th>
-                                                {/* Exibe coluna GR se o ano base for 2026 */}
                                                 {getEffectiveYearKey(modalYear) === "2026" && <th className="p-3 text-right">GR</th>}
                                                 <th className="p-3 text-right">GDAE</th>
                                                 {temAeq && <th className="p-3 text-right">AEQ</th>}
@@ -664,7 +715,7 @@
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {[45, 44, 43, 42, 41, 40, 39, 38, 37, 36].map(padrao => {
+                                            {padroesDisponiveis.map(padrao => {
                                                 const dados = calculateYear(modalYear, padrao);
                                                 return (
                                                     <tr key={padrao} className="hover:bg-blue-50/30 transition-colors">
