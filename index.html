@@ -9,11 +9,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     
     <!-- Babel para compilar JSX no navegador -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
     
     <!-- Configuração do Babel para usar o modo clássico do React -->
     <script>
@@ -25,7 +25,7 @@
     </script>
     
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
 
     <style>
         body { background-color: #f8fafc; }
@@ -222,14 +222,20 @@
                     valFC = baseUniversalTop45 * FC_FACTORS[selectedFC][effectiveYearKey];
                 }
 
-                const totalRemuneratorio = base + gal + gr + gdae + valAeq + valVpi + valFC;
+                // NOVO (TCU, 15/07/2026): a FC (Função Comissionada) passou a ser considerada
+                // parcela autônoma, distinta da remuneração efetiva. Por isso ela NÃO entra
+                // mais na base que sofre o abate-teto — é paga de forma integral, por cima.
+                // GAL, GR, GDAE, AEQ e VPI continuam sujeitos ao Teto Constitucional normalmente.
+                const totalSujeitoAoTeto = base + gal + gr + gdae + valAeq + valVpi;
+                const totalRemuneratorio = totalSujeitoAoTeto + valFC;
 
                 let abateTeto = 0;
-                if (totalRemuneratorio > TETO_CONSTITUCIONAL) {
-                    abateTeto = totalRemuneratorio - TETO_CONSTITUCIONAL;
+                if (totalSujeitoAoTeto > TETO_CONSTITUCIONAL) {
+                    abateTeto = totalSujeitoAoTeto - TETO_CONSTITUCIONAL;
                 }
 
-                const remunEfetiva = totalRemuneratorio - abateTeto;
+                // A FC é somada de volta integralmente (fora do teto), mas continua sujeita a PSS/IR
+                const remunEfetiva = (totalSujeitoAoTeto - abateTeto) + valFC;
                 const pss = calculatePSS(remunEfetiva, regime);
 
                 let valFunpresp = 0;
@@ -427,6 +433,11 @@
                                                 <option value="FC-6">FC-6</option>
                                                 <option value="FC-7">FC-7</option>
                                             </select>
+                                            {selectedFC && (
+                                                <p className="text-[9px] text-emerald-600 font-bold mt-2 flex items-center gap-1">
+                                                    <Icon name="shield-check" size={11} /> Paga integralmente, fora do abate-teto (TCU, 15/07/2026)
+                                                </p>
+                                            )}
                                         </div>
 
                                         {/* AEQ */}
@@ -599,7 +610,7 @@
                                                             {data.gr > 0 && <div className="flex justify-between"><span>GR ({data.effectiveYearKey === "2026" ? "Ativa" : "Inativa"}):</span><span className="font-mono text-slate-900">{formatBRL(data.gr)}</span></div>}
                                                             <div className="flex justify-between"><span>GDAE ({gdaePerc}%):</span><span className="font-mono text-slate-900">{formatBRL(data.gdae)}</span></div>
                                                             {temAeq && <div className="flex justify-between text-amber-700 font-bold"><span>AEQ ({aeqPerc}%):</span><span className="font-mono">{formatBRL(data.valAeq)}</span></div>}
-                                                            {data.valFC > 0 && <div className="flex justify-between text-indigo-700 font-bold"><span>{selectedFC}:</span><span className="font-mono">{formatBRL(data.valFC)}</span></div>}
+                                                            {data.valFC > 0 && <div className="flex justify-between text-indigo-700 font-bold"><span>{selectedFC} <span className="text-emerald-600 font-black">(fora do teto)</span>:</span><span className="font-mono">{formatBRL(data.valFC)}</span></div>}
                                                             <div className="flex justify-between text-slate-600"><span>VPI (Vantagem Individual):</span><span className="font-mono">{formatBRL(data.valVpi)}</span></div>
                                                             
                                                             <div className="h-px bg-slate-200 my-1" />
@@ -666,7 +677,7 @@
                                                 <>Neste cenário, o PSS incide sobre a <strong>remuneração total</strong> (respeitado o abate-teto), utilizando alíquotas progressivas que podem chegar a 22% nas faixas superiores.</>
                                             )}
                                             <br/><br/>
-                                            <span className="text-amber-300 text-xs font-bold uppercase">Nota:</span> Ao atingir o final da carreira, é comum que a remuneração bruta ultrapasse o Teto Constitucional.
+                                            <span className="text-amber-300 text-xs font-bold uppercase">Nota:</span> Desde a decisão do TCU de 15/07/2026, a Função Comissionada (FC) é considerada parcela autônoma e não sofre abate-teto — apenas vencimento, GAL, GR, GDAE, AEQ e VPI continuam sujeitos ao Teto Constitucional.
                                         </p>
                                     </div>
                                     <div className="bg-white/5 backdrop-blur-sm p-6 rounded-3xl border border-white/10 text-center min-w-[200px]">
@@ -678,8 +689,22 @@
                             </main>
                         </div>
 
-                        <footer className="mt-12 pt-8 border-t border-slate-200 text-center">
-                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Dashboard Senado Federal • v5.0 • Analista e Técnico</p>
+                        <footer className="mt-12 pt-8 border-t border-slate-200 text-center space-y-4">
+                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Dashboard Senado Federal • v5.1 • Analista e Técnico</p>
+
+                            <div className="max-w-2xl mx-auto text-left bg-white border border-slate-200 rounded-2xl p-5">
+                                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <Icon name="history" size={13} className="text-blue-500" /> Histórico de Atualizações
+                                </h5>
+                                <div className="space-y-3">
+                                    <div className="flex gap-3">
+                                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md whitespace-nowrap h-fit">15/07/2026</span>
+                                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                                            Simulador atualizado para refletir a decisão do <strong>TCU (Tribunal de Contas da União)</strong>, tomada em 15/07/2026 por 8 votos a 1, que passou a considerar a <strong>Função Comissionada (FC)</strong> como parcela autônoma da remuneração. Na prática, a FC agora é paga <strong>integralmente</strong>, sem sofrer o abate-teto constitucional — apenas Vencimento, GAL, GR, GDAE, AEQ e VPI continuam sujeitos ao Teto de {formatBRL(TETO_CONSTITUCIONAL)}.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </footer>
                     </div>
 
@@ -701,7 +726,7 @@
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded">GDAE: {gdaePerc}%</span>
                                         <span className="text-[10px] font-bold bg-amber-50 text-amber-600 px-2 py-1 rounded">AEQ: {temAeq ? `${aeqPerc}%` : 'Não'}</span>
-                                        <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded">FC: {selectedFC || 'Nenhuma'}</span>
+                                        <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded">FC: {selectedFC || 'Nenhuma'} {selectedFC ? '(fora do teto)' : ''}</span>
                                         <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">VPI: {formatBRL(vpi)}</span>
                                         <span className="text-[10px] font-bold bg-orange-50 text-orange-600 px-2 py-1 rounded">Alimentação: {formatBRL(VALE_ALIMENTACAO)}</span>
                                     </div>
@@ -717,7 +742,7 @@
                                                 {getEffectiveYearKey(modalYear) === "2026" && <th className="p-3 text-right">GR</th>}
                                                 <th className="p-3 text-right">GDAE</th>
                                                 {temAeq && <th className="p-3 text-right">AEQ</th>}
-                                                {selectedFC && <th className="p-3 text-right">FC</th>}
+                                                {selectedFC && <th className="p-3 text-right">FC (fora do teto)</th>}
                                                 <th className="p-3 text-right">VPI</th>
                                                 <th className="p-3 text-right">Alim.</th>
                                                 <th className="p-3 text-right bg-blue-50 text-blue-700">Bruto Total</th>
@@ -745,7 +770,7 @@
                                     </table>
                                 </div>
                                 <p className="text-[10px] text-slate-400 mt-4 italic text-center">
-                                    * O "Bruto Total" considera Vencimento + Gratificações + Adicionais (AEQ/VPI) + FC + Auxílio Alimentação. (Auxílio Creche não incluído nesta tabela geral).
+                                    * O "Bruto Total" considera Vencimento + Gratificações + Adicionais (AEQ/VPI) + FC + Auxílio Alimentação. (Auxílio Creche não incluído nesta tabela geral). A FC não sofre abate-teto (TCU, 15/07/2026), mas continua incidindo PSS/IR normalmente.
                                     {getEffectiveYearKey(modalYear) !== modalYear && (
                                         <>
                                             <br/> 
