@@ -725,14 +725,14 @@
                         </div>
 
                         <footer className="mt-12 pt-8 border-t border-slate-200 text-center space-y-4">
-                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Dashboard Senado Federal • v5.1 • Analista e Técnico</p>
+                            <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">Dashboard Senado Federal • v1 • Analista e Técnico</p>
 
                             <div className="max-w-2xl mx-auto text-left bg-white border border-slate-200 rounded-2xl p-5">
                                 <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                     <Icon name="history" size={13} className="text-blue-500" /> Histórico de Atualizações
                                 </h5>
-                                <div className="space-y-3">
-                                    <div className="flex gap-3">
+                                <div className="divide-y divide-slate-200">
+                                    <div className="flex gap-3 pb-3">
                                         <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-md whitespace-nowrap h-fit">07/10/2026</span>
                                         <p className="text-[11px] text-slate-600 leading-relaxed">
                                             <span className="inline-flex items-center gap-1 text-[9px] font-black text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded mr-1 align-middle uppercase tracking-wider"><Icon name="bug" size={10} /> Correção de erro</span>
@@ -740,9 +740,10 @@
                                             <br />Agradecimento a <strong>Gustavo Henrique Martins Cavallini</strong> pelo alerta.
                                         </p>
                                     </div>
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-3 pt-3">
                                         <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md whitespace-nowrap h-fit">15/07/2026</span>
                                         <p className="text-[11px] text-slate-600 leading-relaxed">
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded mr-1 align-middle uppercase tracking-wider"><Icon name="gavel" size={10} /> Decisão do TCU</span>
                                             Simulador atualizado para refletir a decisão do <strong>TCU (Tribunal de Contas da União)</strong>, tomada em 15/07/2026 por 8 votos a 1, que passou a considerar a <strong>Função Comissionada (FC)</strong> como parcela autônoma da remuneração. Na prática, a FC agora é paga <strong>integralmente</strong>, sem sofrer o abate-teto constitucional — apenas Vencimento, GAL, GR, GDAE, AEQ e VPI continuam sujeitos ao Teto de {formatBRL(TETO_CONSTITUCIONAL)}.
                                         </p>
                                     </div>
