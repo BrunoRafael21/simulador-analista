@@ -163,7 +163,8 @@
                 let baseCalc = base;
                 if (tipoRegime === 'RPC') baseCalc = Math.min(base, TETO_INSS_2026);
 
-                const f1 = 1518.00, f2 = 2793.88, f3 = 4190.83, f4 = TETO_INSS_2026; 
+                // Faixas RGPS 2026 (Portaria Interministerial MPS/MF, jan/2026)
+                const f1 = 1621.00, f2 = 2902.84, f3 = 4354.27, f4 = TETO_INSS_2026;
                 const f5 = 13969.48, f6 = 27938.95, f7 = 54480.97;
 
                 let pss = 0;
@@ -245,10 +246,11 @@
 
                 const baseIR = remunEfetiva - pss - valFunpresp - (dependentesIR * DED_DEPENDENTE_IR);
                 let irpf = 0;
-                if (baseIR > 4664.68) irpf = baseIR * 0.275 - 893.66;
-                else if (baseIR > 3751.06) irpf = baseIR * 0.225 - 662.77;
-                else if (baseIR > 2826.66) irpf = baseIR * 0.15 - 381.44;
-                else if (baseIR > 2259.20) irpf = baseIR * 0.075 - 169.44;
+                // Tabela progressiva mensal vigente desde mai/2025 (Lei 15.191/2025)
+                if (baseIR > 4664.68) irpf = baseIR * 0.275 - 908.73;
+                else if (baseIR > 3751.05) irpf = baseIR * 0.225 - 675.49;
+                else if (baseIR > 2826.65) irpf = baseIR * 0.15 - 394.16;
+                else if (baseIR > 2428.80) irpf = baseIR * 0.075 - 182.16;
 
                 const brutoTotalDisplay = totalRemuneratorio + valCreche + valAlimentacao;
                 const liquido = brutoTotalDisplay - abateTeto - pss - irpf - valFunpresp;
@@ -733,6 +735,13 @@
                                 </h5>
                                 <div className="divide-y divide-slate-200">
                                     <div className="flex gap-3 pb-3">
+                                        <span className="text-[10px] font-black text-violet-600 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-md whitespace-nowrap h-fit">14/11/2026</span>
+                                        <p className="text-[11px] text-slate-600 leading-relaxed">
+                                            <span className="inline-flex items-center gap-1 text-[9px] font-black text-violet-700 bg-violet-100 px-1.5 py-0.5 rounded mr-1 align-middle uppercase tracking-wider"><Icon name="calculator" size={10} /> Cálculo</span>
+                                            <strong>Previdência e Imposto de Renda.</strong> Faixas do <strong>PSS</strong> atualizadas para a tabela do RGPS de 2026 e <strong>IRPF</strong> para a tabela progressiva vigente desde maio/2025. Os descontos agora batem com o contracheque do Senado.
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-3 py-3">
                                         <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-md whitespace-nowrap h-fit">07/10/2026</span>
                                         <p className="text-[11px] text-slate-600 leading-relaxed">
                                             <span className="inline-flex items-center gap-1 text-[9px] font-black text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded mr-1 align-middle uppercase tracking-wider"><Icon name="bug" size={10} /> Bug</span>
