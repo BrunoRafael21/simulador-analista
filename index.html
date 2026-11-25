@@ -165,8 +165,8 @@
 
                 // Faixas RGPS 2026 (Portaria Interministerial MPS/MF, jan/2026)
                 const f1 = 1621.00, f2 = 2902.84, f3 = 4354.27, f4 = TETO_INSS_2026;
-                // Faixas acima do teto RGPS reajustadas pelo mesmo índice de 2026 (+3,90%)
-                const f5 = 14514.29, f6 = 29028.57, f7 = 56605.73;
+                // Faixas acima do teto RGPS: Anexo III da mesma portaria (RPPS da União)
+                const f5 = 14514.30, f6 = 29028.57, f7 = 56605.73;
 
                 let pss = 0;
                 if (baseCalc > 0) pss += Math.min(baseCalc, f1) * 0.075;
