@@ -457,10 +457,10 @@
                                                 <div className="space-y-2 pt-2 border-t border-amber-100">
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Nível do Adicional</span>
-                                                        <span className="text-lg font-black text-amber-600 bg-amber-100 px-2 rounded-md">{aeqPerc}%</span>
+                                                        <span className="text-lg font-black text-amber-600 bg-amber-100 px-2 rounded-md">{String(aeqPerc).replace(".", ",")}%</span>
                                                     </div>
                                                     <input 
-                                                        type="range" min="0" max="30" step="1" 
+                                                        type="range" min="0" max="30" step="0.5" 
                                                         value={aeqPerc} 
                                                         onChange={(e) => setAeqPerc(Number(e.target.value))} 
                                                         className="w-full h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer accent-amber-600" 
@@ -619,7 +619,7 @@
                                                                     <div className="flex justify-between"><span>GAL (Fator Carreira):</span><span className="font-mono text-slate-900">{formatBRL(data.gal)}</span></div>
                                                                     {data.gr > 0 && <div className="flex justify-between"><span>GR ({data.effectiveYearKey === "2026" ? "Ativa" : "Inativa"}):</span><span className="font-mono text-slate-900">{formatBRL(data.gr)}</span></div>}
                                                                     <div className="flex justify-between"><span>GDAE ({gdaePerc}%):</span><span className="font-mono text-slate-900">{formatBRL(data.gdae)}</span></div>
-                                                                    {temAeq && <div className="flex justify-between text-amber-700 font-bold"><span>AEQ ({aeqPerc}%):</span><span className="font-mono">{formatBRL(data.valAeq)}</span></div>}
+                                                                    {temAeq && <div className="flex justify-between text-amber-700 font-bold"><span>AEQ ({String(aeqPerc).replace(".", ",")}%):</span><span className="font-mono">{formatBRL(data.valAeq)}</span></div>}
                                                                     <div className="flex justify-between text-slate-600"><span>VPI (Vantagem Individual):</span><span className="font-mono">{formatBRL(data.valVpi)}</span></div>
                                                                     {data.abateTeto > 0 && (
                                                                         <div className="flex justify-between text-red-600 font-bold bg-red-50 p-1 rounded">
@@ -779,7 +779,7 @@
                                     </p>
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded">GDAE: {gdaePerc}%</span>
-                                        <span className="text-[10px] font-bold bg-amber-50 text-amber-600 px-2 py-1 rounded">AEQ: {temAeq ? `${aeqPerc}%` : 'Não'}</span>
+                                        <span className="text-[10px] font-bold bg-amber-50 text-amber-600 px-2 py-1 rounded">AEQ: {temAeq ? `${String(aeqPerc).replace(".", ",")}%` : 'Não'}</span>
                                         <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded">FC: {selectedFC || 'Nenhuma'} {selectedFC ? '(fora do teto)' : ''}</span>
                                         <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">VPI: {formatBRL(vpi)}</span>
                                         <span className="text-[10px] font-bold bg-orange-50 text-orange-600 px-2 py-1 rounded">Alimentação: {formatBRL(VALE_ALIMENTACAO)}</span>
